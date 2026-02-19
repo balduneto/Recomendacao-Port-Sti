@@ -1,0 +1,823 @@
+import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { 
+  Search, Upload, BarChart3, FileText, 
+  User, Database, CheckCircle, ChevronRight,
+  Activity, ArrowLeft, Star, HelpCircle, Save,
+  Thermometer, Send, AlertCircle, Download,
+  ThumbsUp, ThumbsDown, Target, Plus, X,
+  Printer, Eye, FileDown, RefreshCw, Briefcase, Hash, MapPin, Box, Trash2,
+  ListFilter, CheckSquare, Square, Layers, Award, Menu, Info, Lightbulb, MessageSquareQuote, Sparkles, BrainCircuit, BookOpen
+} from 'lucide-react';
+import { 
+  Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, 
+  ResponsiveContainer, Tooltip, Legend
+} from 'recharts';
+
+// --- CONFIGURAÇÃO DE AMBIENTE ---
+const useEnvironmentSetup = () => {
+  const [isReady, setIsReady] = useState(false);
+  useEffect(() => {
+    let meta = document.querySelector('meta[name="viewport"]');
+    if (!meta) { 
+      meta = document.createElement('meta'); 
+      meta.name = "viewport"; 
+      document.head.appendChild(meta); 
+    }
+    meta.content = "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no";
+
+    if (!document.getElementById('html2pdf-script')) {
+      const pdfScript = document.createElement('script');
+      pdfScript.id = 'html2pdf-script';
+      pdfScript.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
+      document.body.appendChild(pdfScript);
+    }
+
+    const style = document.createElement('style');
+    style.innerHTML = `
+      html, body { min-height: 100%; margin: 0; padding: 0; background-color: #f8fafc; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+      #root { height: 100%; display: flex; flex-direction: column; }
+      .scrollbar-hide::-webkit-scrollbar { display: none; }
+      .overflow-x-auto { -webkit-overflow-scrolling: touch; }
+      .header-logo { height: 40px; width: auto; object-fit: contain; }
+      @media (max-width: 640px) { .header-logo { height: 32px; } }
+      
+      /* Slider Termômetro Melhorado */
+      input[type=range].thermometer-slider {
+        -webkit-appearance: none; 
+        width: 100%; 
+        height: 12px;
+        border-radius: 6px;
+        background: linear-gradient(to right, #3b82f6 0%, #3b82f6 40%, #eab308 50%, #eab308 70%, #ef4444 80%, #ef4444 100%);
+        outline: none;
+        transition: opacity .2s;
+      }
+      input[type=range].thermometer-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: #ffffff;
+        border: 2px solid #475569;
+        cursor: pointer;
+        margin-top: -6px; /* Ajuste vertical para alinhar com o track */
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        transition: transform 0.1s;
+      }
+      input[type=range].thermometer-slider::-webkit-slider-thumb:hover {
+        transform: scale(1.1);
+        border-color: #1e293b;
+      }
+      /* Track para navegadores baseados em Webkit (Chrome, Safari) */
+      input[type=range].thermometer-slider::-webkit-slider-runnable-track {
+        width: 100%;
+        height: 12px;
+        cursor: pointer;
+        border-radius: 6px;
+      }
+    `;
+    document.head.appendChild(style);
+
+    if (!window.tailwind) {
+      const script = document.createElement('script');
+      script.src = "https://cdn.tailwindcss.com";
+      script.onload = () => {
+        window.tailwind.config = {
+          theme: {
+            extend: {
+              colors: {
+                slate: { 50: '#f8fafc', 100: '#f1f5f9', 200: '#e2e8f0', 300: '#cbd5e1', 400: '#94a3b8', 500: '#64748b', 600: '#475569', 700: '#334155', 800: '#1e293b', 900: '#0f172a' },
+                indigo: { 50: '#eef2ff', 100: '#e0e7ff', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca', 800: '#3730a3', 900: '#312e81' },
+                blue: { 50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8', 800: '#1e40af', 900: '#1e3a8a' }
+              }
+            }
+          }
+        };
+        setTimeout(() => setIsReady(true), 100);
+      };
+      script.onerror = () => setIsReady(true);
+      document.head.appendChild(script);
+    } else { 
+      setIsReady(true); 
+    }
+  }, []);
+  return isReady;
+};
+
+// --- BASE DE CONHECIMENTO TÉCNICO (PORTFÓLIO) ---
+const PORTFOLIO_KNOWLEDGE_BASE = {
+  "BALANCEAMENTO DE LINHA DE PRODUÇÃO": {
+    desc: "Ajuste da distribuição de tarefas entre os postos de trabalho para evitar que uns fiquem parados enquanto outros estão sobrecarregados.",
+    benefits: "Aumenta a quantidade de produtos feitos por hora com a mesma equipe; Reduz horas extras; Melhora o fluxo de trabalho.",
+    segments: "Automotivo, Eletroeletrônico, Alimentos e bebidas."
+  },
+  "CONTROLE DE QUALIDADE": {
+    desc: "Organização do sistema de inspeção e padronização para evitar defeitos antes que eles cheguem ao cliente.",
+    benefits: "Reduz devoluções e reclamações; Garante produtos sempre iguais (padrão); Aumenta a confiança do mercado.",
+    segments: "Automotivo, Aeroespacial, Alimentos/Fármacos."
+  },
+  "CRONOANALISE": {
+    desc: "Medição técnica do tempo necessário para realizar cada tarefa, definindo metas justas de produção.",
+    benefits: "Permite calcular o custo exato do produto; Ajuda a definir prazos de entrega reais; Identifica onde se perde tempo.",
+    segments: "Confecção, Metal-mecânico, Logística interna."
+  },
+  "GESTÃO DE CUSTOS": {
+    desc: "Análise detalhada de quanto custa produzir, separando o que é material, mão de obra e desperdício.",
+    benefits: "Ajuda a decidir o preço de venda correto; Mostra onde cortar gastos sem perder qualidade; Melhora o lucro real.",
+    segments: "Alimentos, Siderurgia, Químico, Plásticos."
+  },
+  "GESTÃO DE ESTOQUE": {
+    desc: "Técnicas para manter apenas a quantidade necessária de materiais e produtos, evitando falta ou excesso.",
+    benefits: "Libera dinheiro parado no armazém; Evita que produtos estraguem ou vençam; Garante material na hora certa.",
+    segments: "Alimentos, Eletroeletrônico, Autopeças."
+  },
+  "LAYOUT": {
+    desc: "Reorganização física das máquinas e móveis para que o trabalho flua sem idas e vindas desnecessárias.",
+    benefits: "Produz mais sem comprar máquinas novas; Reduz risco de acidentes; Diminui o tempo total de fabricação.",
+    segments: "Metal-mecânico, Madeira/Móveis, Logística."
+  },
+  "LEAN MANUFACTURING": {
+    desc: "Filosofia de trabalho focada em eliminar tudo o que não agrega valor ao produto (desperdícios).",
+    benefits: "Entregas no prazo; Maior produtividade da equipe; Resolução rápida de problemas na raiz.",
+    segments: "Automotivo, Bens de consumo, Metal-mecânico."
+  },
+  "LEAN SIX SIGMA": {
+    desc: "União de velocidade (Lean) com precisão e redução de falhas (Six Sigma) usando dados estatísticos.",
+    benefits: "Redução drástica de defeitos; Decisões baseadas em números e não em 'achismos'; Aumento da capacidade.",
+    segments: "Químico, Aeroespacial, Fármacos."
+  },
+  "MAPEAMENTO DE PROCESSO": {
+    desc: "Desenho passo a passo de como as coisas são feitas hoje para identificar falhas e criar um jeito novo e melhor.",
+    benefits: "Processos claros para todos; Facilita o treinamento de novos funcionários; Base para informatização.",
+    segments: "Todos os segmentos com processos complexos."
+  },
+  "PLANEJAMENTO E CONTROLE DE MANUTENÇÃO": {
+    desc: "Organização das manutenções para evitar que máquinas quebrem de surpresa e parem a produção.",
+    benefits: "Máquinas disponíveis quando necessário; Menor custo com reparos de urgência; Maior vida útil dos equipamentos.",
+    segments: "Siderurgia, Papel e celulose, Alimentos."
+  },
+  "PLANEJAMENTO E CONTROLE DE PRODUÇÃO": {
+    desc: "Sistema para definir o que produzir, quanto e quando, baseado nos pedidos dos clientes e capacidade da fábrica.",
+    benefits: "Melhora a pontualidade na entrega; Reduz estoques em processo; Organiza o dia a dia da fábrica.",
+    segments: "Autopeças, Bens de consumo, Plásticos."
+  },
+  "PROGRAMA 5S": {
+    desc: "Método base para organizar o ambiente: descartar o inútil, ordenar o útil, limpar, padronizar e manter a disciplina.",
+    benefits: "Ambiente mais seguro e agradável; Menos tempo procurando ferramentas; Aumento natural da produtividade.",
+    segments: "Alimentos, Metal-mecânico, Químico."
+  },
+  "SIMULAÇÃO": {
+    desc: "Criação de um modelo digital da fábrica para testar mudanças no computador antes de gastar dinheiro na vida real.",
+    benefits: "Evita investimentos errados em máquinas; Ajuda a dimensionar corretamente a equipe e equipamentos.",
+    segments: "Automotivo, Logística industrial, Metalurgia."
+  }
+};
+
+const PORTFOLIO_STI = Object.keys(PORTFOLIO_KNOWLEDGE_BASE);
+
+// Regras de Recomendação IA
+const RECOMMENDATION_RULES = [
+  { condition: (cat, avg) => cat === "Aderência" && avg <= 2.5, product: "PROGRAMA 5S", strength: 8 },
+  { condition: (cat, avg) => cat === "Aderência" && avg > 2.5 && avg < 4, product: "MAPEAMENTO DE PROCESSO", strength: 6 },
+  { condition: (cat, avg) => cat === "Comprometimento" && avg <= 3, product: "GESTÃO DE CUSTOS", strength: 9 },
+  { condition: (cat, avg) => cat === "Riscos Externos" && avg <= 3.5, product: "PLANEJAMENTO E CONTROLE DE PRODUÇÃO", strength: 7 },
+  { condition: (cat, avg) => cat === "Riscos Técnicos" && avg <= 2.5, product: "LEAN MANUFACTURING", strength: 10 },
+  { condition: (cat, avg) => cat === "Riscos Técnicos" && avg > 2.5 && avg < 4, product: "CONTROLE DE QUALIDADE", strength: 6 }
+];
+
+const DIAGNOSTIC_STRUCTURE = [
+  { category: "Aderência", description: "Alinhamento inicial e absorção da cultura.", questions: [
+      { id: "ad_1", text: "A empresa compreendeu os objetivos desde a prospecção?", didactic: "Clareza na venda.", examples: "1: Confuso | 5: Total clareza" },
+      { id: "ad_2", text: "Houve resistência significativa da equipe?", didactic: "Nível de atrito.", examples: "1: Muita resistência | 5: Colaboração plena" },
+      { id: "ad_3", text: "Os processos foram ajustados com implementação real?", didactic: "Prática vs Teórica.", examples: "1: Nada mudou | 5: Rotina alterada" },
+      { id: "ad_4", text: "Resultados monitorados com ganhos reais?", didactic: "Tangibilidade.", examples: "1: Sem medição | 5: ROI claro" }
+  ]},
+  { category: "Comprometimento", description: "Liderança e recursos.", questions: [
+      { id: "cp_1", text: "O empresário participou das decisões?", didactic: "Presença da liderança.", examples: "1: Ausente | 5: Ativo" },
+      { id: "cp_2", text: "Visão estratégica sobre as mudanças?", didactic: "Maturidade.", examples: "1: Obrigação | 5: Diferencial" },
+      { id: "cp_3", text: "Recursos disponibilizados (tempo/verba)?", didactic: "Viabilidade.", examples: "1: Travado | 5: Liberado" },
+      { id: "cp_4", text: "Promoveu cultura de melhoria contínua?", didactic: "Perenidade.", examples: "1: Estática | 5: Dinâmica" }
+  ]},
+  { category: "Riscos Externos", description: "Mercado e ambiente.", questions: [
+      { id: "re_1", text: "Dificuldades na captação de mão de obra?", didactic: "Talentos.", examples: "1: Parou projeto | 5: Equipe completa" },
+      { id: "re_2", text: "Gargalos na cadeia de suprimentos?", didactic: "Fornecedores.", examples: "1: Crítico | 5: Normal" }
+  ]},
+  { category: "Riscos Técnicos", description: "Qualidade da entrega.", questions: [
+      { id: "rt_1", text: "Cronograma seguido sem desvios?", didactic: "Prazos.", examples: "1: Atrasos | 5: No prazo" },
+      { id: "rt_2", text: "Plano aplicável e realista?", didactic: "Adequação.", examples: "1: Utópico | 5: Perfeito" },
+      { id: "rt_3", text: "Satisfação geral do cliente?", didactic: "Valor percebido.", examples: "1: Insatisfeito | 5: Encantado" }
+  ]}
+];
+
+const parseCSV = (text, delimiter = ';') => {
+  const lines = text.split('\n').filter(line => line.trim() !== '');
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(delimiter).map(h => h.trim().replace(/^"|"$/g, ''));
+  const parsedData = lines.slice(1).map(line => {
+    let values;
+    try { values = line.split(delimiter).map(val => val.trim().replace(/^"|"$/g, '')); } 
+    catch (e) { values = line.split(delimiter); }
+    const entry = {};
+    headers.forEach((header, index) => { entry[header] = values[index] || ''; });
+    return entry;
+  });
+  return parsedData.map(item => ({
+    'ID': item['ID'] || '',
+    'CNPJ CLIENTE': item['CNPJ'] || item['CNPJ CLIENTE'] || '',
+    'NOME CLIENTE': item['CLIENTE'] || item['RAZÃO SOCIAL'] || item['NOME CLIENTE'] || 'Nome não identificado',
+    'consultorName': item['CONSULTORES'] || '',
+    'PROPOSTA': item['PROPOSTA'] || item['NÚMERO'] || '-',
+    'PORTE': item['PORTE RECEITA'] || item['PORTE CONTRATAÇÃO'] || item['PORTE'] || '-',
+    'SETOR': item['SETOR'] || item['SEÇÃO CNAE EMPRESA ATENDIDA'] || '-',
+    'PRODUTO_NACIONAL': item['PRODUTO NACIONAL'] || item['PRODUTO REGIONAL'] || '-'
+  }));
+};
+
+const PrintStyles = () => (
+  <style>{`
+    @media print {
+      @page { margin: 10mm; size: portrait; }
+      html, body { background: white !important; font-size: 10pt; width: 100%; height: auto; }
+      .no-print, nav, button, .lucide-arrow-left { display: none !important; }
+      .print-only { display: block !important; }
+      .print-header-logo { position: absolute; top: 0; right: 0; height: 40px; width: auto; }
+      .print-container { width: 100% !important; max-width: none !important; padding: 0 !important; margin: 0 !important; display: block !important; }
+      .avoid-break { page-break-inside: avoid !important; break-inside: avoid !important; margin-bottom: 20px !important; display: block !important; }
+      .force-break-before { page-break-before: always !important; break-before: page !important; margin-top: 20px !important; }
+      .print-card { border: 1px solid #e2e8f0 !important; box-shadow: none !important; margin-bottom: 15px !important; padding: 12px !important; background: white !important; border-radius: 8px; width: 100% !important; }
+      .recharts-wrapper { margin: 0 auto !important; }
+      .bg-indigo-50 { background-color: #eef2ff !important; }
+      .bg-emerald-50 { background-color: #ecfdf5 !important; }
+      .bg-rose-50 { background-color: #fff1f2 !important; }
+      .bg-slate-50 { background-color: #f8fafc !important; }
+      .bg-slate-100 { background-color: #f1f5f9 !important; }
+      .bg-green-100 { background-color: #dcfce7 !important; }
+      .bg-yellow-100 { background-color: #fef9c3 !important; }
+      .bg-red-100 { background-color: #fee2e2 !important; }
+      .print-table { width: 100%; border-collapse: collapse; font-size: 8pt; }
+      .print-table th, .print-table td { border: 1px solid #cbd5e1; padding: 4px; text-align: left; }
+      .print-table th { background-color: #e0e7ff; color: #312e81; font-weight: bold; }
+      .rec-justificativa { font-style: italic; color: #475569; margin-top: 4px; font-size: 9pt; border-left: 2px solid #cbd5e1; padding-left: 8px; }
+    }
+    .print-only { display: none; }
+  `}</style>
+);
+
+const Card = ({ children, className = "" }) => (
+  <div className={`bg-white border border-slate-200 rounded-lg shadow-sm ${className}`}>{children}</div>
+);
+
+const Button = ({ children, onClick, variant = "primary", className = "", icon: Icon, disabled = false }) => {
+  const baseStyle = "px-4 py-2 md:px-5 md:py-2.5 rounded-md font-semibold text-sm transition-all flex items-center justify-center gap-2 cursor-pointer no-print touch-manipulation whitespace-nowrap";
+  const variants = {
+    primary: "bg-slate-900 text-white hover:bg-slate-800 shadow-sm disabled:opacity-50",
+    secondary: "bg-white text-slate-900 border border-slate-300 hover:bg-slate-50",
+    ghost: "bg-transparent text-slate-600 hover:bg-slate-100",
+    accent: "bg-blue-700 text-white hover:bg-blue-800 shadow-sm"
+  };
+  return (
+    <button onClick={onClick} disabled={disabled} className={`${baseStyle} ${variants[variant]} ${className}`}>
+      {Icon && <Icon className="w-4 h-4" />} {children}
+    </button>
+  );
+};
+
+// HELPER: Strength Logic (1-10)
+const getStrengthLabel = (s) => {
+  const score = parseInt(s, 10);
+  if (score >= 8) return `Forte (${score})`;
+  if (score >= 5) return `Média (${score})`;
+  return `Baixa (${score})`;
+};
+const getThermometerIcon = (s) => { 
+  const score = parseInt(s, 10);
+  const c = score >= 8 ? 'text-red-500' : score >= 5 ? 'text-yellow-500' : 'text-blue-500'; 
+  return <Thermometer className={`w-4 h-4 ${c}`} />; 
+};
+const getScoreColor = (s) => { const n = parseFloat(s); if (n >= 4) return 'bg-green-100 text-green-800'; if (n >= 3) return 'bg-yellow-100 text-yellow-800'; return 'bg-red-100 text-red-800'; };
+const getStrengthCardColor = (s) => {
+  const score = parseInt(s, 10);
+  if (score >= 8) return 'bg-red-50 border-red-200 border-l-red-500';
+  if (score >= 5) return 'bg-yellow-50 border-yellow-200 border-l-yellow-500';
+  return 'bg-blue-50 border-blue-200 border-l-blue-500';
+};
+
+function MarketConsolidator({ evaluations, onBack }) {
+  useEffect(() => {
+    if (!document.getElementById('html2pdf-script')) {
+      const script = document.createElement('script'); script.id = 'html2pdf-script';
+      script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
+      script.async = true; document.body.appendChild(script);
+    }
+  }, []);
+
+  const handlePrintConsolidated = () => {
+    const element = document.getElementById('consolidated-report');
+    if (typeof window.html2pdf === 'undefined') return alert("Carregando biblioteca PDF...");
+    const opt = { margin: 5, filename: `Relatorio_Mercado_${new Date().toISOString().split('T')[0]}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }, pagebreak: { mode: ['css', 'legacy'] } };
+    window.html2pdf().set(opt).from(element).save();
+  };
+
+  return (
+    <div className="space-y-6 animate-in fade-in duration-500 pb-10 print-container">
+      <PrintStyles />
+      <div className="no-print mb-4 flex justify-between items-center">
+        <button onClick={onBack} className="flex items-center gap-2 text-slate-500 hover:text-slate-800 text-sm font-medium"><ArrowLeft className="w-4 h-4" /> Voltar</button>
+      </div>
+      <div id="consolidated-report" className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-slate-200 overflow-x-auto relative">
+        <img src="https://i.postimg.cc/3wW9LVRV/senai_gti.png" alt="SENAI GTI" className="print-header-logo hidden print-only" />
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 border-b border-slate-200 pb-4">
+          <div className="mb-4 md:mb-0"><div className="flex items-center gap-2 mb-2 text-blue-800 no-print"><Layers className="w-6 h-6" /><span className="text-xs font-bold uppercase tracking-wider">Inteligência de Mercado</span></div><h2 className="text-xl md:text-2xl font-black text-slate-900">Relatório Comparativo</h2></div>
+          <div className="text-right text-xs text-slate-400 no-print">{evaluations.length} empresas</div>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm text-left border-collapse print-table min-w-[800px]">
+            <thead>
+              <tr className="bg-slate-50 text-slate-700 uppercase text-xs font-bold">
+                <th className="p-3 border-b border-slate-200">Cliente/CNPJ</th>
+                <th className="p-3 border-b border-slate-200">Setor/Porte</th>
+                <th className="p-3 border-b border-slate-200">Proposta / Produto</th>
+                <th className="p-3 border-b border-slate-200">Consultor</th>
+                <th className="p-3 border-b border-slate-200 text-center">Nota</th>
+                <th className="p-3 border-b border-slate-200 bg-indigo-50 text-indigo-900 text-center">Recomendação / Justificativa</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {evaluations.map((ev, idx) => {
+                const recs = ev.recommendations?.length ? ev.recommendations : [{product: "Sem recomendação", strength: "", comment: ""}];
+                return recs.map((rec, rIdx) => (
+                  <tr key={`${idx}-${rIdx}`} className="hover:bg-slate-50 avoid-break">
+                    <td className="p-3 align-top border-r border-slate-100"><div className="font-bold text-slate-800">{ev.service['NOME CLIENTE']}</div><div className="text-[10px] font-mono text-slate-500">{ev.service['CNPJ CLIENTE']}</div></td>
+                    <td className="p-3 align-top text-xs border-r border-slate-100"><div>{ev.service['SETOR']}</div><div className="text-slate-400">{ev.service['PORTE']}</div></td>
+                    <td className="p-3 align-top text-xs border-r border-slate-100 max-w-[150px] truncate" title={ev.service['PRODUTO_NACIONAL']}><div className="font-bold text-slate-700">{ev.service['PROPOSTA']}</div><div className="text-slate-500">{ev.service['PRODUTO_NACIONAL']}</div></td>
+                    <td className="p-3 align-top text-xs border-r border-slate-100">{ev.service.consultorName}</td>
+                    <td className="p-3 align-top text-center border-r border-slate-100"><span className={`px-2 py-1 rounded text-[10px] font-bold ${getScoreColor(ev.overallScore)}`}>{ev.overallScore}</span></td>
+                    <td className="p-3 align-top bg-indigo-50/30">
+                      {rec.strength ? (
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center justify-between gap-1"><span className="font-bold text-indigo-900 text-[10px]">{rec.product}</span><div className="flex items-center gap-1 bg-white px-1 py-0.5 rounded border border-slate-200">{getThermometerIcon(rec.strength)}<span className="text-[9px] font-bold uppercase">{getStrengthLabel(rec.strength)}</span></div></div>
+                          {rec.comment && <p className="rec-justificativa" title={rec.comment}>{rec.comment}</p>}
+                        </div>
+                      ) : <span className="text-xs text-slate-400 italic">N/A</span>}
+                    </td>
+                  </tr>
+                ));
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div className="flex justify-end pt-4 no-print"><Button variant="primary" onClick={handlePrintConsolidated} icon={FileDown}>Baixar PDF</Button></div>
+    </div>
+  );
+}
+
+function InfographicResult({ service, answers, recommendations = [], onSave, isViewMode = false, onBack, onNewAnalysis }) {
+  const handleDownloadDirectPDF = () => {
+    const element = document.getElementById('report-content');
+    if (typeof window.html2pdf === 'undefined') return;
+    const opt = { margin: 10, filename: `Relatorio_${service['NOME CLIENTE'].replace(/[^a-zA-Z0-9]/g, '_')}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true, scrollY: 0 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'] } };
+    element.className += " pdf-generating";
+    window.html2pdf().set(opt).from(element).save().then(() => { element.className = element.className.replace(" pdf-generating", ""); });
+  };
+
+  const radarData = useMemo(() => {
+    return DIAGNOSTIC_STRUCTURE.map(cat => {
+      const qIds = cat.questions.map(q => q.id);
+      const scores = qIds.map(id => answers[id] || 0);
+      const avg = scores.reduce((a, b) => a + b, 0) / (scores.length || 1);
+      return { subject: cat.category, A: parseFloat(avg.toFixed(1)), fullMark: 5 };
+    });
+  }, [answers]);
+
+  const overallScore = useMemo(() => {
+    const values = Object.values(answers);
+    if (values.length === 0) return "0.0";
+    return (values.reduce((a, b) => a + b, 0) / values.length).toFixed(1);
+  }, [answers]);
+
+  const analysis = useMemo(() => {
+    let allQuestions = [];
+    DIAGNOSTIC_STRUCTURE.forEach(cat => cat.questions.forEach(q => allQuestions.push({ ...q, score: answers[q.id] || 0, category: cat.category })));
+    allQuestions.sort((a, b) => b.score - a.score);
+    const strengths = allQuestions.filter(q => q.score >= 4).slice(0, 3);
+    const gaps = allQuestions.filter(q => q.score <= 3).reverse().slice(0, 3);
+    return { strengths, gaps };
+  }, [answers]);
+
+  return (
+    <div className="space-y-6 animate-in zoom-in-95 duration-500 pb-10 print-container">
+      <PrintStyles />
+      <div className="no-print mb-4 flex flex-col md:flex-row justify-between items-center gap-3">
+        <button onClick={onBack} className="flex items-center gap-2 text-slate-500 hover:text-slate-800 text-sm font-medium"><ArrowLeft className="w-4 h-4" /> {isViewMode ? "Voltar ao Dashboard" : "Voltar à Edição"}</button>
+        {onNewAnalysis && <Button variant="secondary" onClick={onNewAnalysis} icon={RefreshCw} className="text-xs">Nova Análise</Button>}
+      </div>
+
+      <div id="report-content" className="bg-white p-4 md:p-8 relative">
+        <img src="https://i.postimg.cc/3wW9LVRV/senai_gti.png" alt="SENAI GTI" className="print-header-logo hidden print-only" />
+
+        <div className="text-center space-y-2 mb-6 print-card p-4 rounded-lg border border-slate-200 avoid-break">
+          <div className="mb-4 pb-2 border-b border-slate-200 flex justify-between items-center">
+             <h1 className="text-lg md:text-xl font-bold uppercase text-slate-700">Relatório de Diagnóstico</h1>
+             <div className="flex items-center gap-2 bg-slate-100 px-3 py-1 rounded-full"><Award className="w-4 h-4 text-yellow-600" /><span className="text-sm font-bold text-slate-700">Nota Geral: {overallScore} / 5.0</span></div>
+          </div>
+          <h2 className="text-xl md:text-2xl font-black text-slate-900">{service['NOME CLIENTE']}</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 text-left text-xs bg-slate-50 p-2 rounded print-grid-reset">
+             <div><span className="font-bold block text-slate-400">Proposta</span>{service['PROPOSTA']}</div>
+             <div><span className="font-bold block text-slate-400">Porte</span>{service['PORTE']}</div>
+             <div><span className="font-bold block text-slate-400">Setor</span>{service['SETOR']}</div>
+             <div><span className="font-bold block text-slate-400">Produto</span>{service['PRODUTO_NACIONAL']}</div>
+          </div>
+        </div>
+
+        <div className="mb-4 p-3 bg-blue-50 text-blue-800 text-xs rounded border border-blue-100 flex items-start gap-2 avoid-break">
+           <Info className="w-4 h-4 mt-0.5 shrink-0" /><p>Este relatório apresenta a análise de maturidade da empresa em relação aos pilares de inovação.</p>
+        </div>
+
+        <div className="mb-6 print-card p-4 border border-slate-200 rounded-lg">
+          <div className="border-b pb-2 mb-4"><h3 className="font-bold text-lg">Detalhamento</h3></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 print-grid-reset">
+            {DIAGNOSTIC_STRUCTURE.map((cat, idx) => (
+              <div key={idx} className="mb-4 avoid-break">
+                <h4 className="font-bold text-xs uppercase mb-2 bg-slate-100 p-1">{cat.category}</h4>
+                <table className="w-full text-xs"><tbody>{cat.questions.map(q => (<tr key={q.id} className="border-b last:border-0"><td className="py-1 pr-2">{q.text}</td><td className="py-1 w-8 font-bold text-right">{answers[q.id] || '-'}</td></tr>))}</tbody></table>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 print-grid-reset force-break-before">
+          <Card className="col-span-1 md:col-span-2 p-6 flex flex-col items-center justify-center min-h-[300px] print-card avoid-break">
+            <h3 className="font-bold mb-2">Maturidade 360º</h3>
+            <div className="w-full h-[250px] relative">
+              <ResponsiveContainer width="100%" height="100%"><RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}><PolarGrid /><PolarAngleAxis dataKey="subject" tick={{fontSize: 10}} /><PolarRadiusAxis angle={30} domain={[0, 5]} tick={false} axisLine={false} /><Radar name="Cliente" dataKey="A" stroke="#4f46e5" strokeWidth={3} fill="#6366f1" fillOpacity={0.3} isAnimationActive={false} /><Tooltip /></RadarChart></ResponsiveContainer>
+              <div className="absolute top-0 right-0 bg-white/90 p-2 border rounded text-[10px] shadow-sm hidden md:block"><p className="font-bold mb-1 border-b">Médias</p>{radarData.map((d, i) => <div key={i} className="flex justify-between gap-2"><span>{d.subject}:</span><span className="font-bold text-indigo-700">{d.A}</span></div>)}</div>
+            </div>
+          </Card>
+          <div className="space-y-4 print-stack">
+             <Card className="p-4 border-l-4 border-l-emerald-500 print-card avoid-break"><h4 className="font-bold text-emerald-800 mb-2">Pontos Fortes</h4><ul className="space-y-1">{analysis.strengths.map((item, i) => <li key={i} className="text-xs">{item.category} ({item.score})</li>)}</ul></Card>
+             <Card className="p-4 border-l-4 border-l-rose-500 print-card avoid-break"><h4 className="font-bold text-rose-800 mb-2">Gaps</h4><ul className="space-y-1">{analysis.gaps.map((item, i) => <li key={i} className="text-xs">{item.category} ({item.score})</li>)}</ul></Card>
+          </div>
+        </div>
+
+        <div className="mt-6 avoid-break force-break-before">
+          <div className="bg-slate-900 text-white p-2 rounded-t-lg print-card" style={{marginBottom:0, border:'none'}}><h3 className="font-bold">Recomendações Estratégicas</h3></div>
+          <div className="bg-white border rounded-b-lg p-4 print-card" style={{marginTop:0}}>
+            {recommendations.map((rec, idx) => (
+              <div key={idx} className={`p-4 mb-3 rounded border border-l-4 ${getStrengthCardColor(rec.strength)} avoid-break`}>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="font-black text-slate-800 uppercase text-sm">{rec.product}</span>
+                  <span className="text-[10px] font-bold uppercase px-2 py-0.5 bg-white/60 rounded border border-slate-200">Prioridade: {getStrengthLabel(rec.strength)}</span>
+                </div>
+                <div className="bg-white/50 p-3 rounded border border-slate-100">
+                  <div className="flex items-center gap-1 mb-1 text-slate-400"><MessageSquareQuote className="w-3 h-3" /><span className="text-[9px] font-bold uppercase">Justificativa do Especialista:</span></div>
+                  <p className="text-xs italic text-slate-700 leading-relaxed">"{rec.comment}"</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex justify-center gap-4 pt-4 pb-8 no-print">
+        <Button variant="secondary" onClick={handleDownloadDirectPDF} icon={FileDown}>Baixar PDF</Button>
+        {!isViewMode && <Button variant="primary" onClick={() => onSave({ service, answers, recommendations, overallScore })} icon={Save}>Salvar</Button>}
+      </div>
+    </div>
+  );
+}
+
+// --- COMPONENTE: TELA DE AVALIAÇÃO ---
+function EvaluationScreen({ service, onBack, onSave }) {
+  const [answers, setAnswers] = useState({});
+  const [recommendations, setRecommendations] = useState([]); 
+  const [currentRec, setCurrentRec] = useState({ product: "", strength: 5, comment: "" });
+  const [activeStep, setActiveStep] = useState(0); 
+  const [showResult, setShowResult] = useState(false); 
+
+  const handleScore = (qId, score) => setAnswers(prev => ({ ...prev, [qId]: score }));
+  const handleAddRecommendation = () => {
+    if (!currentRec.product || !currentRec.comment) return alert("Preencha o produto e a análise.");
+    setRecommendations(prev => [...prev, currentRec]);
+    setCurrentRec({ product: "", strength: 5, comment: "" });
+  };
+  const handleRemoveRecommendation = (idx) => setRecommendations(prev => prev.filter((_, i) => i !== idx));
+  const handleUpdateRecommendationStrength = (idx, newStrength) => {
+    setRecommendations(prev => prev.map((item, i) => i === idx ? { ...item, strength: newStrength } : item));
+  };
+  const handleFinish = () => {
+    if (recommendations.length === 0) return alert("Adicione pelo menos uma recomendação.");
+    setShowResult(true);
+  };
+  
+  const handleProductSelect = (productName) => {
+    const kb = PORTFOLIO_KNOWLEDGE_BASE[productName];
+    const baseText = kb ? `${kb.desc} Foco principal: ${kb.benefits}` : "";
+    setCurrentRec({...currentRec, product: productName, comment: baseText});
+  };
+
+  const generateAIRecommendation = () => {
+    const averages = DIAGNOSTIC_STRUCTURE.map(cat => {
+      const qIds = cat.questions.map(q => q.id);
+      const scores = qIds.map(id => answers[id] || 0);
+      const validScores = scores.filter(s => s > 0);
+      const avg = validScores.length > 0 ? validScores.reduce((a, b) => a + b, 0) / validScores.length : 0;
+      return { ...cat, avg };
+    });
+
+    const gaps = averages.filter(c => c.avg > 0 && c.avg < 3.5);
+    if (gaps.length === 0) return alert("Nenhum gap crítico encontrado.");
+
+    const newRecs = [];
+    gaps.forEach(gap => {
+      const rule = RECOMMENDATION_RULES.find(r => r.condition(gap.category, gap.avg));
+      if (rule && !recommendations.some(r => r.product === rule.product)) {
+         const kb = PORTFOLIO_KNOWLEDGE_BASE[rule.product];
+         let text = kb ? `[IA] Identificamos um gap em '${gap.category}' (Média: ${gap.avg.toFixed(1)}). Benefícios esperados: ${kb.benefits}` : "";
+         let strengthScore = 10;
+         if (rule.strength === 6) strengthScore = 6; 
+         strengthScore = Math.min(10, Math.max(1, Math.round(11 - (gap.avg * 2))));
+         newRecs.push({ product: rule.product, strength: strengthScore, comment: text });
+      }
+    });
+
+    if (newRecs.length > 0) { setRecommendations(prev => [...prev, ...newRecs]); alert(`${newRecs.length} sugestões adicionadas.`); } 
+    else { alert("Sem sugestões automáticas."); }
+  };
+
+  if (showResult) {
+    return <InfographicResult service={service} answers={answers} recommendations={recommendations} onSave={onSave} onBack={() => setShowResult(false)} onNewAnalysis={() => { if(confirm("Nova análise?")) onBack(); }} />;
+  }
+
+  return (
+    <div className="animate-in slide-in-from-right duration-300 pb-10">
+      <div className="bg-slate-900 text-white p-6 rounded-t-xl mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div><h2 className="text-xl font-bold">{service['NOME CLIENTE']}</h2><p className="text-sm opacity-70">CNPJ: {service['CNPJ CLIENTE']}</p></div>
+        <button onClick={onBack} className="text-white hover:text-slate-200">Voltar</button>
+      </div>
+      
+      <div className="flex flex-col md:flex-row gap-6">
+        <div className="w-full md:w-64 space-y-2 flex overflow-x-auto md:block pb-2 md:pb-0">
+           {DIAGNOSTIC_STRUCTURE.map((cat, idx) => (
+             <button key={idx} onClick={() => setActiveStep(idx)} className={`w-full text-left p-2 rounded text-sm whitespace-nowrap md:whitespace-normal transition-colors ${activeStep === idx ? 'bg-blue-100 text-blue-800 font-bold border-l-4 border-blue-600' : 'hover:bg-slate-50 text-slate-600'}`}>{cat.category}</button>
+           ))}
+           <button onClick={() => setActiveStep(DIAGNOSTIC_STRUCTURE.length)} className={`w-full text-left p-2 rounded text-sm transition-colors ${activeStep === DIAGNOSTIC_STRUCTURE.length ? 'bg-indigo-100 text-indigo-800 font-bold border-l-4 border-indigo-600' : 'hover:bg-slate-50 text-slate-600'}`}>Recomendação</button>
+        </div>
+
+        <div className="flex-1 bg-white p-6 rounded shadow border">
+           {activeStep < DIAGNOSTIC_STRUCTURE.length ? (
+             <div className="space-y-6">
+               <div className="border-b pb-2">
+                 <h3 className="font-bold text-lg text-slate-800">{DIAGNOSTIC_STRUCTURE[activeStep].category}</h3>
+                 <p className="text-sm text-slate-500">{DIAGNOSTIC_STRUCTURE[activeStep].description}</p>
+               </div>
+               
+               {DIAGNOSTIC_STRUCTURE[activeStep].questions.map(q => (
+                 <div key={q.id} className="bg-slate-50 p-4 rounded border border-slate-100">
+                   <p className="font-semibold mb-2 text-slate-800">{q.text}</p>
+                   <div className="flex items-start gap-2 mb-3 bg-blue-50 p-2 rounded text-xs text-blue-800"><Lightbulb className="w-4 h-4 shrink-0 mt-0.5" /><div><p className="font-bold mb-1">O que avaliar:</p><p>{q.didactic}</p></div></div>
+                   <div className="flex flex-wrap gap-2 mb-2">{[1,2,3,4,5].map(s => <button key={s} onClick={() => handleScore(q.id, s)} className={`w-10 h-10 rounded-full font-bold text-sm transition-all ${answers[q.id] === s ? 'bg-indigo-600 text-white shadow-lg scale-110' : 'bg-white border border-slate-300 text-slate-500 hover:border-indigo-400'}`}>{s}</button>)}</div>
+                   <p className="text-xs text-slate-400 italic">Exemplo (1 a 5): {q.examples}</p>
+                 </div>
+               ))}
+               <div className="flex justify-end"><Button onClick={() => setActiveStep(prev => prev + 1)}>Próximo</Button></div>
+             </div>
+           ) : (
+             <div className="space-y-6">
+               <h3 className="font-bold text-lg border-b pb-2 text-indigo-700">Adicionar Recomendação</h3>
+               <div className="bg-indigo-50 p-3 rounded border border-indigo-100 flex items-center justify-between"><div className="flex items-center gap-2 text-indigo-800 text-sm"><BrainCircuit className="w-5 h-5" /><span>Analisar gaps e sugerir produtos automaticamente?</span></div><Button onClick={generateAIRecommendation} icon={Sparkles} className="bg-indigo-600 text-white hover:bg-indigo-700 text-xs">Gerar com IA</Button></div>
+
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <div>
+                   <label className="block text-sm font-bold mb-1">Produto</label>
+                   <select className="w-full p-2 border rounded" onChange={e => handleProductSelect(e.target.value)} value={currentRec.product || ""}>
+                     <option value="">Selecione...</option>
+                     {PORTFOLIO_STI.map(p => <option key={p} value={p}>{p}</option>)}
+                   </select>
+                 </div>
+                 <div>
+                   <label className="block text-sm font-bold mb-1">Termômetro (1-10)</label>
+                   <div className="p-2 border rounded bg-slate-50">
+                      <div className="flex justify-between text-xs font-bold mb-1"><span>1</span><span>{currentRec.strength}</span><span>10</span></div>
+                      <input type="range" className="thermometer-slider" min="1" max="10" value={currentRec.strength} onChange={e => setCurrentRec({...currentRec, strength: parseInt(e.target.value, 10)})} />
+                      <div className="text-center mt-1 text-xs font-bold text-indigo-700 uppercase">{getStrengthLabel(currentRec.strength)}</div>
+                   </div>
+                 </div>
+                 <div className="col-span-1 md:col-span-2">
+                   <label className="block text-sm font-bold mb-1">Análise / Justificativa</label>
+                   <textarea className="w-full p-2 border rounded h-32" placeholder="Justificativa técnica..." value={currentRec.comment} onChange={e => setCurrentRec({...currentRec, comment: e.target.value})} />
+                 </div>
+               </div>
+               <div className="flex justify-end"><Button onClick={handleAddRecommendation} icon={Plus}>Adicionar</Button></div>
+               
+               <div className="border-t pt-4">
+                 <h4 className="font-bold text-sm mb-2">Itens Adicionados ({recommendations.length})</h4>
+                 {recommendations.map((r, i) => (
+                   <div key={i} className="p-4 bg-white border border-slate-200 rounded-lg mb-3 shadow-sm">
+                      <div className="flex justify-between items-start mb-2">
+                         <span className="font-bold text-slate-800">{r.product}</span>
+                         <button onClick={() => handleRemoveRecommendation(i)} className="text-red-500 hover:bg-red-50 p-1 rounded"><X className="w-4 h-4"/></button>
+                      </div>
+                      <div className="mb-2">
+                         <div className="flex justify-between text-xs mb-1"><span className="text-slate-500">Prioridade</span><span className="font-bold text-indigo-700">{getStrengthLabel(r.strength)}</span></div>
+                         <input type="range" className="thermometer-slider" min="1" max="10" value={r.strength} onChange={(e) => handleUpdateRecommendationStrength(i, parseInt(e.target.value))} />
+                      </div>
+                      <p className="text-xs text-slate-600 italic bg-slate-50 p-2 rounded">{r.comment}</p>
+                   </div>
+                 ))}
+               </div>
+               <div className="flex justify-end pt-4"><Button onClick={handleFinish} className="bg-green-600">Gerar Relatório</Button></div>
+             </div>
+           )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// --- APLICAÇÃO PRINCIPAL ---
+
+export default function InovaCXManager() {
+  const isReady = useEnvironmentSetup();
+  const [activeTab, setActiveTab] = useState('search'); 
+  const [servicesDB, setServicesDB] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [consultants, setConsultants] = useState({});
+  const fileInputRef = useRef(null);
+  
+  const [currentEvaluation, setCurrentEvaluation] = useState(null); 
+  const [viewingReport, setViewingReport] = useState(null);
+  const [completedEvaluations, setCompletedEvaluations] = useState([]); 
+  
+  const [selectedEvaluations, setSelectedEvaluations] = useState([]);
+  const [isConsolidatedMode, setIsConsolidatedMode] = useState(false);
+
+  const handleServicesUpload = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const data = parseCSV(e.target.result, ';');
+      setServicesDB(data);
+      alert(`${data.length} atendimentos carregados.`);
+    };
+    reader.readAsText(file);
+  };
+
+  const filteredServices = useMemo(() => {
+    if (!searchTerm || servicesDB.length === 0) return [];
+    const lower = searchTerm.toLowerCase();
+    return servicesDB.filter(item => 
+      item['ID'].toLowerCase().includes(lower) || 
+      item['CNPJ CLIENTE'].includes(lower) || 
+      item['NOME CLIENTE'].toLowerCase().includes(lower)
+    ).slice(0, 12);
+  }, [servicesDB, searchTerm]);
+
+  const startEvaluation = (service) => {
+    const serviceWithConsultant = { ...service, consultorName: consultants[service['ID']] || service.consultorName || '' };
+    setCurrentEvaluation(serviceWithConsultant);
+  };
+
+  const saveEvaluation = (data) => {
+    setCompletedEvaluations(prev => [...prev, data]);
+    setCurrentEvaluation(null);
+    setActiveTab('dashboard');
+  };
+
+  const toggleSelection = (idx) => {
+    if (selectedEvaluations.includes(idx)) {
+      setSelectedEvaluations(prev => prev.filter(i => i !== idx));
+    } else {
+      setSelectedEvaluations(prev => [...prev, idx]);
+    }
+  };
+
+  const generateConsolidatedReport = () => {
+    if (selectedEvaluations.length === 0) return alert("Selecione pelo menos uma empresa.");
+    setIsConsolidatedMode(true);
+  };
+
+  if (!isReady) return <div className="min-h-screen flex items-center justify-center text-slate-500 font-sans animate-pulse">Iniciando Recomenda STI...</div>;
+
+  if (isConsolidatedMode) {
+    const selectedData = completedEvaluations.filter((_, idx) => selectedEvaluations.includes(idx));
+    return <div className="app-container min-h-screen bg-slate-50 font-sans p-4 md:p-6"><div className="max-w-7xl mx-auto"><MarketConsolidator evaluations={selectedData} onBack={() => setIsConsolidatedMode(false)} /></div></div>;
+  }
+
+  if (viewingReport) {
+    return <div className="app-container min-h-screen bg-slate-50 font-sans p-4 md:p-6"><div className="max-w-7xl mx-auto"><InfographicResult {...viewingReport} onBack={() => setViewingReport(null)} isViewMode={true} onSave={() => {}} /></div></div>;
+  }
+
+  if (currentEvaluation) {
+    return <div className="app-container min-h-screen bg-slate-50 p-4 md:p-6"><div className="max-w-7xl mx-auto"><EvaluationScreen service={currentEvaluation} onBack={() => setCurrentEvaluation(null)} onSave={saveEvaluation} /></div></div>;
+  }
+
+  return (
+    <div className="app-container min-h-screen bg-white text-slate-900 font-sans">
+      <PrintStyles />
+      <header className="bg-white border-b border-slate-200 text-blue-900 py-4 px-4 shadow-sm sticky top-0 z-50 no-print">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+               <img src="https://i.postimg.cc/3wW9LVRV/senai_gti.png" alt="SENAI GTI" className="h-10 w-auto object-contain" />
+               <h1 className="text-lg md:text-xl font-bold ml-2 text-blue-900">Recomenda STI</h1>
+            </div>
+          </div>
+          <nav className="flex gap-2">
+            <Button variant={activeTab === 'search' ? "accent" : "ghost"} onClick={() => setActiveTab('search')} icon={Search} className="text-xs md:text-sm">Atendimentos</Button>
+            <Button variant={activeTab === 'dashboard' ? "accent" : "ghost"} onClick={() => setActiveTab('dashboard')} icon={BarChart3} className="text-xs md:text-sm">Hub ({completedEvaluations.length})</Button>
+          </nav>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto p-4 md:p-6 flex-1 w-full">
+        {activeTab === 'search' && (
+          <div className="space-y-6 md:space-y-8 animate-in fade-in">
+            <div className="bg-blue-50 border border-blue-100 p-4 rounded-lg flex items-start gap-3 text-sm text-blue-800 shadow-sm">
+               <Info className="w-5 h-5 shrink-0 mt-0.5" />
+               <div>
+                 <p className="font-bold mb-1">Bem-vindo ao Recomenda STI</p>
+                 <p>Utilize esta ferramenta para diagnosticar a maturidade de inovação dos seus clientes. Importe sua base de dados CSV, localize o atendimento e inicie a avaliação para gerar insights estratégicos.</p>
+               </div>
+            </div>
+
+            <div className="bg-white border p-4 md:p-6 rounded-xl flex flex-col md:flex-row justify-between items-center gap-4 shadow-sm">
+              <div className="text-center md:text-left"><h3 className="font-bold">Base de Dados</h3><p className="text-sm text-slate-500">{servicesDB.length} registros ativos.</p></div>
+              <div className="w-full md:w-auto flex gap-2"><input type="file" className="hidden" ref={fileInputRef} onChange={handleServicesUpload} /><Button className="w-full md:w-auto" variant="secondary" onClick={() => fileInputRef.current.click()} icon={Upload}>Carregar CSV</Button></div>
+            </div>
+            
+            <div className="relative"><Search className="absolute left-3 top-3 text-slate-400" /><input type="text" className="w-full pl-10 p-3 border rounded-lg shadow-sm" placeholder="Buscar por Cliente, CNPJ ou ID..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} /></div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredServices.map((s, idx) => (
+                <Card key={idx} className="p-4 border-t-4 border-t-blue-600 hover:shadow-md transition-shadow">
+                  <div className="flex justify-between items-start mb-2">
+                    <h4 className="font-bold truncate w-3/4 text-blue-900" title={s['NOME CLIENTE']}>{s['NOME CLIENTE']}</h4>
+                    <span className="text-[10px] bg-slate-100 px-1 rounded text-slate-500">#{s['ID']}</span>
+                  </div>
+                  <p className="text-xs text-slate-500 mb-2 font-mono">{s['CNPJ CLIENTE']}</p>
+                  <p className="text-xs text-slate-600 mb-4 bg-slate-50 p-1 rounded truncate border border-slate-100" title={s['PRODUTO_NACIONAL']}>{s['PRODUTO_NACIONAL']}</p>
+                  
+                  <div className="mb-4 text-xs bg-slate-50 p-2 rounded border border-slate-100">
+                    <p className="font-bold text-slate-400 mb-1">Consultor Responsável</p>
+                    <input type="text" className="bg-white border rounded w-full p-1 text-slate-800" placeholder="Nome do consultor..." value={s.consultorName || consultants[s['ID']] || ''} onChange={e => setConsultants({...consultants, [s['ID']]: e.target.value})} />
+                  </div>
+                  <Button className="w-full" onClick={() => startEvaluation(s)} icon={Send}>Iniciar Avaliação</Button>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'dashboard' && (
+          <div className="space-y-6 animate-in fade-in">
+            <div className="flex flex-col md:flex-row justify-between items-center border-b pb-4 gap-4">
+              <div><h2 className="text-2xl font-bold text-blue-900">Hub de Consolidação</h2><p className="text-slate-500">Selecione empresas para gerar a Matriz de Oportunidades.</p></div>
+              {selectedEvaluations.length > 0 && (
+                <Button onClick={generateConsolidatedReport} icon={ListFilter} className="bg-blue-600 w-full md:w-auto">
+                  Gerar Relatório ({selectedEvaluations.length})
+                </Button>
+              )}
+            </div>
+
+            {completedEvaluations.length > 0 ? (
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {completedEvaluations.map((ev, i) => (
+                    <Card key={i} className={`p-4 border-l-4 transition-all cursor-pointer ${selectedEvaluations.includes(i) ? 'border-l-blue-600 bg-blue-50 ring-1 ring-blue-200' : 'border-l-slate-300 hover:border-l-blue-400'}`}>
+                       <div className="flex justify-between items-start">
+                         <div className="flex items-center gap-3 w-full">
+                           <button onClick={() => toggleSelection(i)} className="text-slate-400 hover:text-indigo-600 shrink-0">
+                             {selectedEvaluations.includes(i) ? <CheckSquare className="w-6 h-6 text-indigo-600" /> : <Square className="w-6 h-6" />}
+                           </button>
+                           <div className="min-w-0">
+                             <h4 className="font-bold truncate text-blue-900">{ev.service['NOME CLIENTE']}</h4>
+                             <p className="text-xs text-slate-500">{ev.service['SETOR']} | {ev.service['PORTE']}</p>
+                           </div>
+                         </div>
+                         <Button variant="ghost" onClick={(e) => { e.stopPropagation(); setViewingReport(ev); }} icon={Eye} className="p-1 h-8 text-xs shrink-0">Ver</Button>
+                       </div>
+                       <div className="mt-3 pl-9">
+                         <p className="text-xs font-bold text-slate-400 uppercase">Recomendações ({ev.recommendations?.length || 0})</p>
+                         <div className="flex flex-wrap gap-1 mt-1">
+                           {(ev.recommendations || []).slice(0, 3).map((r, ri) => (
+                             <span key={ri} className="text-[10px] px-2 py-0.5 bg-white border rounded text-slate-600 truncate max-w-[150px]">{r.product}</span>
+                           ))}
+                           {(ev.recommendations?.length || 0) > 3 && <span className="text-[10px] text-slate-400">...</span>}
+                         </div>
+                       </div>
+                    </Card>
+                  ))}
+               </div>
+            ) : (
+               <div className="text-center py-10 text-slate-400 border-2 border-dashed rounded-lg bg-slate-50">
+                 <p className="mb-2">Nenhuma avaliação realizada ainda.</p>
+                 <button onClick={() => setActiveTab('search')} className="text-blue-600 font-bold text-sm hover:underline">Ir para Atendimentos</button>
+               </div>
+            )}
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
