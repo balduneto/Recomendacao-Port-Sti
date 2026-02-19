@@ -13,13 +13,13 @@ import {
   ResponsiveContainer, Tooltip, Legend
 } from 'recharts';
 
-// --- CONFIGURAÇÃO DE AMBIENTE BLINDADA (ANTI-CORRUPÇÃO VISUAL) ---
+// --- CONFIGURAÇÃO DE AMBIENTE ROBUSTA (ANTI-QUEBRA) ---
 const useEnvironmentSetup = () => {
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
     const init = async () => {
-      // 1. Meta Viewport (Essencial para Mobile não ficar "longe" ou quebrado)
+      // 1. Meta Viewport (Essencial para Mobile)
       let meta = document.querySelector('meta[name="viewport"]');
       if (!meta) { 
         meta = document.createElement('meta'); 
@@ -28,24 +28,22 @@ const useEnvironmentSetup = () => {
       }
       meta.content = "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no";
 
-      // 2. Injetar html2pdf de forma segura e assíncrona
+      // 2. Injetar html2pdf
       if (!document.getElementById('html2pdf-script')) {
         const pdfScript = document.createElement('script');
         pdfScript.id = 'html2pdf-script';
         pdfScript.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
-        pdfScript.async = true;
         document.body.appendChild(pdfScript);
       }
 
-      // 3. CSS Crítico (Fallback e Reset) - Blinda a aplicação caso o Tailwind demore
-      // Define a estrutura básica mesmo sem a biblioteca carregar
+      // 3. CSS Crítico e Reset (Garante visual mesmo sem Tailwind carregar na hora)
       const style = document.createElement('style');
       style.innerHTML = `
         *, *::before, *::after { box-sizing: border-box; }
         html, body { min-height: 100%; margin: 0; padding: 0; background-color: #f8fafc; font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
         #root { min-height: 100vh; display: flex; flex-direction: column; }
         
-        /* Utilitários Críticos de Layout para Fallback */
+        /* Utilitários de Layout Fallback */
         .flex { display: flex; }
         .flex-col { flex-direction: column; }
         .items-center { align-items: center; }
@@ -59,33 +57,29 @@ const useEnvironmentSetup = () => {
         .shadow-sm { box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); }
         .p-4 { padding: 1rem; }
         .p-6 { padding: 1.5rem; }
-        .text-center { text-align: center; }
-        .font-bold { font-weight: 700; }
         
-        /* Scrollbar e Utilitários */
+        /* Scrollbar e Utilitários Mobile */
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .overflow-x-auto { overflow-x: auto; -webkit-overflow-scrolling: touch; }
         
         /* Header Logo */
         .header-logo { height: 40px; width: auto; object-fit: contain; }
-        @media (max-width: 640px) { .header-logo { height: 32px; } }
-
+        
         /* Slider Termômetro */
         input[type=range].thermometer-slider { -webkit-appearance: none; width: 100%; height: 12px; border-radius: 6px; background: linear-gradient(to right, #3b82f6 0%, #3b82f6 40%, #eab308 50%, #eab308 70%, #ef4444 80%, #ef4444 100%); outline: none; transition: opacity .2s; }
         input[type=range].thermometer-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 24px; height: 24px; border-radius: 50%; background: #ffffff; border: 2px solid #475569; cursor: pointer; margin-top: -6px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
-        input[type=range].thermometer-slider::-webkit-slider-runnable-track { width: 100%; height: 12px; cursor: pointer; border-radius: 6px; }
-
+        
         /* Loader */
         .app-loader { position: fixed; inset: 0; background: #f8fafc; display: flex; align-items: center; justify-content: center; z-index: 9999; flex-direction: column; gap: 1rem; color: #1e3a8a; }
-        
-        /* Estilos específicos para PDF (força layout desktop) */
-        .pdf-generating {
-           width: 1200px !important;
-           max-width: 1200px !important;
-           margin: 0 auto !important;
-           background: white !important;
+
+        /* Estilo PDF Desktop Forçado */
+        .force-desktop-width {
+            width: 1200px !important;
+            max-width: 1200px !important;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
         }
-        .pdf-generating .grid-cols-1-mobile { grid-template-columns: repeat(3, 1fr) !important; }
       `;
       document.head.appendChild(style);
 
@@ -105,10 +99,10 @@ const useEnvironmentSetup = () => {
               }
             }
           };
-          // Pequeno delay para garantir que o estilo foi aplicado
+          // Delay seguro
           setTimeout(() => setIsReady(true), 500);
         };
-        // Fallback em caso de erro no CDN
+        // Fallback
         script.onerror = () => setIsReady(true);
         document.head.appendChild(script);
       } else { 
@@ -117,11 +111,10 @@ const useEnvironmentSetup = () => {
     };
     init();
   }, []);
-
   return isReady;
 };
 
-// --- BASE DE CONHECIMENTO TÉCNICO (PORTFÓLIO) ---
+// --- BASE DE CONHECIMENTO TÉCNICO ---
 const PORTFOLIO_KNOWLEDGE_BASE = {
   "BALANCEAMENTO DE LINHA DE PRODUÇÃO": {
     desc: "Ajuste da distribuição de tarefas entre os postos de trabalho para evitar que uns fiquem parados enquanto outros estão sobrecarregados.",
@@ -254,15 +247,21 @@ const PrintStyles = () => (
   <style>{`
     @media print {
       @page { margin: 10mm; size: portrait; }
-      html, body { background: white !important; font-size: 10pt; width: 100%; height: auto; }
+      html, body { background: white !important; font-size: 10pt; width: 100%; height: auto; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       .no-print, nav, button, .lucide-arrow-left { display: none !important; }
       .print-only { display: block !important; }
+      
       .print-header-logo { position: absolute; top: 0; right: 0; height: 40px; width: auto; }
       .print-container { width: 100% !important; max-width: none !important; padding: 0 !important; margin: 0 !important; display: block !important; }
+      
       .avoid-break { page-break-inside: avoid !important; break-inside: avoid !important; margin-bottom: 20px !important; display: block !important; }
       .force-break-before { page-break-before: always !important; break-before: page !important; margin-top: 20px !important; }
+      
       .print-card { border: 1px solid #e2e8f0 !important; box-shadow: none !important; margin-bottom: 20px !important; padding: 15px !important; background: white !important; border-radius: 8px; width: 100% !important; }
+      
       .recharts-wrapper { margin: 0 auto !important; }
+      
+      /* Cores */
       .bg-indigo-50 { background-color: #eef2ff !important; }
       .bg-emerald-50 { background-color: #ecfdf5 !important; }
       .bg-rose-50 { background-color: #fff1f2 !important; }
@@ -271,7 +270,9 @@ const PrintStyles = () => (
       .bg-green-100 { background-color: #dcfce7 !important; }
       .bg-yellow-100 { background-color: #fef9c3 !important; }
       .bg-red-100 { background-color: #fee2e2 !important; }
+      
       .rec-card { border-left-width: 4px !important; margin-bottom: 15px !important; page-break-inside: avoid !important; }
+      
       .print-table { width: 100%; border-collapse: collapse; font-size: 8pt; }
       .print-table th, .print-table td { border: 1px solid #cbd5e1; padding: 4px; text-align: left; }
       .print-table th { background-color: #e0e7ff; color: #312e81; font-weight: bold; }
@@ -332,8 +333,18 @@ function MarketConsolidator({ evaluations, onBack }) {
   const handlePrintConsolidated = () => {
     const element = document.getElementById('consolidated-report');
     if (typeof window.html2pdf === 'undefined') return alert("Carregando biblioteca PDF...");
+    
+    // Forçar largura de desktop para o PDF de tabela
+    const originalWidth = element.style.width;
+    element.style.width = '1200px'; 
+    element.classList.add('pdf-generating');
+
     const opt = { margin: 5, filename: `Relatorio_Mercado_${new Date().toISOString().split('T')[0]}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }, pagebreak: { mode: ['css', 'legacy'] } };
-    window.html2pdf().set(opt).from(element).save();
+    
+    window.html2pdf().set(opt).from(element).save().then(() => {
+       element.classList.remove('pdf-generating');
+       element.style.width = originalWidth;
+    });
   };
 
   return (
@@ -395,10 +406,10 @@ function InfographicResult({ service, answers, recommendations = [], onSave, isV
     const element = document.getElementById('report-content');
     if (typeof window.html2pdf === 'undefined') return;
     
-    // Força tamanho A4 e layout desktop antes de gerar
+    // Forçar layout desktop para PDF
     const originalWidth = element.style.width;
-    element.style.width = '1100px'; 
-    element.classList.add('pdf-generating');
+    element.style.width = '1200px';
+    element.classList.add('force-desktop-width'); // Classe auxiliar
 
     const opt = { 
       margin: 10, 
@@ -410,8 +421,8 @@ function InfographicResult({ service, answers, recommendations = [], onSave, isV
     };
 
     window.html2pdf().set(opt).from(element).save().then(() => { 
-        element.classList.remove('pdf-generating'); 
-        element.style.width = originalWidth; // Restaura largura original
+        element.style.width = originalWidth;
+        element.classList.remove('force-desktop-width');
     });
   };
 
@@ -762,13 +773,13 @@ export default function InovaCXManager() {
       <PrintStyles />
       <header className="bg-white border-b border-slate-200 text-blue-900 py-4 px-4 shadow-sm sticky top-0 z-50 no-print">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="flex items-center gap-3 w-full md:w-auto justify-between">
+          <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
-               <img src="https://i.postimg.cc/3wW9LVRV/senai_gti.png" alt="SENAI GTI" className="h-10 w-auto object-contain" crossOrigin="anonymous" />
+               <img src="https://i.postimg.cc/3wW9LVRV/senai_gti.png" alt="SENAI GTI" className="h-8 md:h-10 w-auto object-contain" crossOrigin="anonymous" />
                <h1 className="text-lg md:text-xl font-bold ml-2 text-blue-900">Recomenda STI</h1>
             </div>
           </div>
-          <nav className="flex gap-2 w-full md:w-auto">
+          <nav className="flex gap-2">
             <Button variant={activeTab === 'search' ? "accent" : "ghost"} onClick={() => setActiveTab('search')} icon={Search} className="flex-1 md:flex-none text-xs md:text-sm">Atendimentos</Button>
             <Button variant={activeTab === 'dashboard' ? "accent" : "ghost"} onClick={() => setActiveTab('dashboard')} icon={BarChart3} className="flex-1 md:flex-none text-xs md:text-sm">Hub ({completedEvaluations.length})</Button>
           </nav>
