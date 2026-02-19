@@ -6,17 +6,19 @@ import {
   Thermometer, Send, AlertCircle, Download,
   ThumbsUp, ThumbsDown, Target, Plus, X,
   Printer, Eye, FileDown, RefreshCw, Briefcase, Hash, MapPin, Box, Trash2,
-  ListFilter, CheckSquare, Square, Layers, Award, Menu, Info, Lightbulb, MessageSquareQuote, Sparkles, BrainCircuit, BookOpen
+  ListFilter, CheckSquare, Square, Layers, Award, Menu, Info, Lightbulb, MessageSquareQuote, Sparkles, BrainCircuit, BookOpen, Loader2
 } from 'lucide-react';
 import { 
   Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, 
   ResponsiveContainer, Tooltip, Legend
 } from 'recharts';
 
-// --- CONFIGURAÇÃO DE AMBIENTE ---
+// --- CONFIGURAÇÃO DE AMBIENTE ROBUSTA (ANTI-CORRUPÇÃO VISUAL) ---
 const useEnvironmentSetup = () => {
   const [isReady, setIsReady] = useState(false);
+
   useEffect(() => {
+    // 1. Meta Viewport (Essencial para Mobile)
     let meta = document.querySelector('meta[name="viewport"]');
     if (!meta) { 
       meta = document.createElement('meta'); 
@@ -25,6 +27,7 @@ const useEnvironmentSetup = () => {
     }
     meta.content = "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no";
 
+    // 2. Injetar html2pdf de forma segura
     if (!document.getElementById('html2pdf-script')) {
       const pdfScript = document.createElement('script');
       pdfScript.id = 'html2pdf-script';
@@ -32,52 +35,42 @@ const useEnvironmentSetup = () => {
       document.body.appendChild(pdfScript);
     }
 
+    // 3. CSS Crítico (Fallback e Reset)
+    // Isso garante que o layout não quebre se o Tailwind demorar
     const style = document.createElement('style');
     style.innerHTML = `
-      html, body { min-height: 100%; margin: 0; padding: 0; background-color: #f8fafc; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
-      #root { height: 100%; display: flex; flex-direction: column; }
+      *, *::before, *::after { box-sizing: border-box; }
+      html, body { min-height: 100%; margin: 0; padding: 0; background-color: #f8fafc; font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
+      #root { min-height: 100vh; display: flex; flex-direction: column; }
+      
+      /* Classes utilitárias de fallback para estrutura */
+      .flex { display: flex; }
+      .flex-col { flex-direction: column; }
+      .items-center { align-items: center; }
+      .justify-between { justify-content: space-between; }
+      .w-full { width: 100%; }
+      .grid { display: grid; }
+      .gap-4 { gap: 1rem; }
+      
+      /* Scrollbar e Utilitários */
       .scrollbar-hide::-webkit-scrollbar { display: none; }
-      .overflow-x-auto { -webkit-overflow-scrolling: touch; }
+      .overflow-x-auto { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      
+      /* Header Logo */
       .header-logo { height: 40px; width: auto; object-fit: contain; }
       @media (max-width: 640px) { .header-logo { height: 32px; } }
-      
-      /* Slider Termômetro Melhorado */
-      input[type=range].thermometer-slider {
-        -webkit-appearance: none; 
-        width: 100%; 
-        height: 12px;
-        border-radius: 6px;
-        background: linear-gradient(to right, #3b82f6 0%, #3b82f6 40%, #eab308 50%, #eab308 70%, #ef4444 80%, #ef4444 100%);
-        outline: none;
-        transition: opacity .2s;
-      }
-      input[type=range].thermometer-slider::-webkit-slider-thumb {
-        -webkit-appearance: none;
-        appearance: none;
-        width: 24px;
-        height: 24px;
-        border-radius: 50%;
-        background: #ffffff;
-        border: 2px solid #475569;
-        cursor: pointer;
-        margin-top: -6px; /* Ajuste vertical para alinhar com o track */
-        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        transition: transform 0.1s;
-      }
-      input[type=range].thermometer-slider::-webkit-slider-thumb:hover {
-        transform: scale(1.1);
-        border-color: #1e293b;
-      }
-      /* Track para navegadores baseados em Webkit (Chrome, Safari) */
-      input[type=range].thermometer-slider::-webkit-slider-runnable-track {
-        width: 100%;
-        height: 12px;
-        cursor: pointer;
-        border-radius: 6px;
-      }
+
+      /* Slider Termômetro */
+      input[type=range].thermometer-slider { -webkit-appearance: none; width: 100%; height: 12px; border-radius: 6px; background: linear-gradient(to right, #3b82f6 0%, #3b82f6 40%, #eab308 50%, #eab308 70%, #ef4444 80%, #ef4444 100%); outline: none; transition: opacity .2s; }
+      input[type=range].thermometer-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 24px; height: 24px; border-radius: 50%; background: #ffffff; border: 2px solid #475569; cursor: pointer; margin-top: -6px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+      input[type=range].thermometer-slider::-webkit-slider-runnable-track { width: 100%; height: 12px; cursor: pointer; border-radius: 6px; }
+
+      /* Loader */
+      .app-loader { position: fixed; inset: 0; background: #f8fafc; display: flex; align-items: center; justify-content: center; z-index: 9999; }
     `;
     document.head.appendChild(style);
 
+    // 4. Injetar Tailwind CSS
     if (!window.tailwind) {
       const script = document.createElement('script');
       script.src = "https://cdn.tailwindcss.com";
@@ -93,8 +86,10 @@ const useEnvironmentSetup = () => {
             }
           }
         };
-        setTimeout(() => setIsReady(true), 100);
+        // Pequeno delay para garantir aplicação
+        setTimeout(() => setIsReady(true), 300);
       };
+      // Fallback em caso de erro no CDN
       script.onerror = () => setIsReady(true);
       document.head.appendChild(script);
     } else { 
@@ -244,7 +239,7 @@ const PrintStyles = () => (
       .print-container { width: 100% !important; max-width: none !important; padding: 0 !important; margin: 0 !important; display: block !important; }
       .avoid-break { page-break-inside: avoid !important; break-inside: avoid !important; margin-bottom: 20px !important; display: block !important; }
       .force-break-before { page-break-before: always !important; break-before: page !important; margin-top: 20px !important; }
-      .print-card { border: 1px solid #e2e8f0 !important; box-shadow: none !important; margin-bottom: 15px !important; padding: 12px !important; background: white !important; border-radius: 8px; width: 100% !important; }
+      .print-card { border: 1px solid #e2e8f0 !important; box-shadow: none !important; margin-bottom: 20px !important; padding: 15px !important; background: white !important; border-radius: 8px; width: 100% !important; }
       .recharts-wrapper { margin: 0 auto !important; }
       .bg-indigo-50 { background-color: #eef2ff !important; }
       .bg-emerald-50 { background-color: #ecfdf5 !important; }
@@ -254,6 +249,7 @@ const PrintStyles = () => (
       .bg-green-100 { background-color: #dcfce7 !important; }
       .bg-yellow-100 { background-color: #fef9c3 !important; }
       .bg-red-100 { background-color: #fee2e2 !important; }
+      .rec-card { border-left-width: 4px !important; margin-bottom: 15px !important; page-break-inside: avoid !important; }
       .print-table { width: 100%; border-collapse: collapse; font-size: 8pt; }
       .print-table th, .print-table td { border: 1px solid #cbd5e1; padding: 4px; text-align: left; }
       .print-table th { background-color: #e0e7ff; color: #312e81; font-weight: bold; }
@@ -268,7 +264,7 @@ const Card = ({ children, className = "" }) => (
 );
 
 const Button = ({ children, onClick, variant = "primary", className = "", icon: Icon, disabled = false }) => {
-  const baseStyle = "px-4 py-2 md:px-5 md:py-2.5 rounded-md font-semibold text-sm transition-all flex items-center justify-center gap-2 cursor-pointer no-print touch-manipulation whitespace-nowrap";
+  const baseStyle = "px-4 py-2 md:px-5 md:py-2.5 rounded-md font-semibold text-sm transition-all flex items-center justify-center gap-2 cursor-pointer no-print touch-manipulation whitespace-nowrap active:scale-95";
   const variants = {
     primary: "bg-slate-900 text-white hover:bg-slate-800 shadow-sm disabled:opacity-50",
     secondary: "bg-white text-slate-900 border border-slate-300 hover:bg-slate-50",
@@ -409,7 +405,8 @@ function InfographicResult({ service, answers, recommendations = [], onSave, isV
     <div className="space-y-6 animate-in zoom-in-95 duration-500 pb-10 print-container">
       <PrintStyles />
       <div className="no-print mb-4 flex flex-col md:flex-row justify-between items-center gap-3">
-        <button onClick={onBack} className="flex items-center gap-2 text-slate-500 hover:text-slate-800 text-sm font-medium"><ArrowLeft className="w-4 h-4" /> {isViewMode ? "Voltar ao Dashboard" : "Voltar à Edição"}</button>
+        <button onClick={onBack} className="flex items-center gap-2 text-slate-500 hover:text-slate-800 text-sm font-medium"><ArrowLeft className="w-4 h-4" /> {isViewMode ? "Voltar ao Dashboard" : "Voltar à Edição"}
+        </button>
         {onNewAnalysis && <Button variant="secondary" onClick={onNewAnalysis} icon={RefreshCw} className="text-xs">Nova Análise</Button>}
       </div>
 
@@ -698,7 +695,14 @@ export default function InovaCXManager() {
     setIsConsolidatedMode(true);
   };
 
-  if (!isReady) return <div className="min-h-screen flex items-center justify-center text-slate-500 font-sans animate-pulse">Iniciando Recomenda STI...</div>;
+  if (!isReady) {
+    return (
+      <div className="app-loader">
+        <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
+        <span className="text-sm font-medium text-slate-500">Iniciando Aplicação...</span>
+      </div>
+    );
+  }
 
   if (isConsolidatedMode) {
     const selectedData = completedEvaluations.filter((_, idx) => selectedEvaluations.includes(idx));
@@ -718,15 +722,15 @@ export default function InovaCXManager() {
       <PrintStyles />
       <header className="bg-white border-b border-slate-200 text-blue-900 py-4 px-4 shadow-sm sticky top-0 z-50 no-print">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 w-full md:w-auto justify-between">
             <div className="flex items-center gap-2">
-               <img src="https://i.postimg.cc/3wW9LVRV/senai_gti.png" alt="SENAI GTI" className="h-10 w-auto object-contain" />
+               <img src="https://i.postimg.cc/3wW9LVRV/senai_gti.png" alt="SENAI GTI" className="h-8 md:h-10 w-auto object-contain" />
                <h1 className="text-lg md:text-xl font-bold ml-2 text-blue-900">Recomenda STI</h1>
             </div>
           </div>
-          <nav className="flex gap-2">
-            <Button variant={activeTab === 'search' ? "accent" : "ghost"} onClick={() => setActiveTab('search')} icon={Search} className="text-xs md:text-sm">Atendimentos</Button>
-            <Button variant={activeTab === 'dashboard' ? "accent" : "ghost"} onClick={() => setActiveTab('dashboard')} icon={BarChart3} className="text-xs md:text-sm">Hub ({completedEvaluations.length})</Button>
+          <nav className="flex gap-2 w-full md:w-auto">
+            <Button variant={activeTab === 'search' ? "accent" : "ghost"} onClick={() => setActiveTab('search')} icon={Search} className="flex-1 md:flex-none text-xs md:text-sm">Atendimentos</Button>
+            <Button variant={activeTab === 'dashboard' ? "accent" : "ghost"} onClick={() => setActiveTab('dashboard')} icon={BarChart3} className="flex-1 md:flex-none text-xs md:text-sm">Hub ({completedEvaluations.length})</Button>
           </nav>
         </div>
       </header>
